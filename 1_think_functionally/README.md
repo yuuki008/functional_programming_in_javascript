@@ -79,6 +79,93 @@ Array.from({ length: 10 }, (v, k) => k + 1)
 関数型プログラミングでは **状態の不在**と**不変性**を追求する。
 状態を持たないコードを実現するには、副作用と状態変化を伴わない関数 (**純粋関数**) を使う。
 
+### 純粋関数と副作用問題
+
+> 純粋関数とは
+> - 提供される入力値にのみ依存する。関数の実行中や関数呼び出しが行われる間に状態が変更する可能性がある、隠された値や外部スコープの値には依存しない
+> - 関数自身のスコープの外にある値を一切変更しない。つまり、グローバルオブジェクトや参照私された引数を変更しない
+
+```javascript
+var counter = 0;
+function increment() {
+    counter++;
+}
+```
+
+上記プログラムは、グローバル変数を変更しており、純粋関数ではない。
+純粋関数を使うことで、把握しやすいプログラムになるが、複雑で動的なデータを扱うことが満ち溢れているソフトウェア開発では、純粋関数のみで開発を行うことは不可能。
+
+そのため、純粋と不純なプログラムを分割、状態を管理しつつ変更を最小限に抑えることが求められる。
+
+```javascript
+// 副作用を伴う命令型 showStudent 関数
+function showStudent(ssn) {
+  let student = db.find(ssn);
+
+  if (student !== null) {
+    document.querySelector(`#${elementId}`).innerHTML = `${student.ssn}, ${student.firstname}, ${student.lastname}`;
+  } else {
+    throw new Error('Student not found!');
+  }
+}
+```
+
+**上記プログラムに存在する副作用**
+- db という外部変数を参照している。
+- elementId という外部変数を参照している。
+- HTML 要素に直接変更を加えている。
+- 学生情報が見つからない場合、例外をスローしている。その結果、プログラムスタック全体が巻き戻され、プログラムが終了する可能性がある。
+
+**2 つの改善方法**
+- 大きな関数を複数の小さな関数に分解
+- 関数の処理に必要となるすべてのパラメータを明示的に定義し、副作用を減らす。
+
+
+```javascript
+const find = curry((db, id) => {
+    let obj = db.find(id);
+    if (obj === null) throw new Error('Object not found!');
+
+    return obj;
+})
+
+const csv = student => `${student.ssn}, ${student.firstname}, ${student.lastname}`;
+const append = curry((selector, info) => {
+    document.querySelector(selector).innerHTML = info;
+})
+```
+
+### 参照透過性と代替性
+
+参照透過性とは、ある関数が同じ引数を受け取った場合、常に同じ結果を返すことを指す。
+
+```javascript
+// 命令型
+var counter = 0;
+function increment() {
+    return counter++;
+}
+
+// 関数型
+const increment = count => count + 1;
+```
+
+命令型の計算結果は、常に変更される可能性を持つ外部の counter 変数に依存しているため、一貫性がなく予測できない。
+関数型は、引数にしか依存しておらず、エラーが発生する余地がない。
+
+>> [!NOTE]
+>> Javascript では、配列やオブジェクトは参照渡しであるため、参照透過性を持たない。
+
+## 関数型プログラミングの利点
+
+関数型でプログラムするために
+- タスクをシンプルな関数に分解する
+- 円滑なチェーンを使ってデータを処理する
+- リアクティブパラダイムを使ってイベントクドコードの複雑さを低減する
+
+### タスクをシンプルな関数に分解する
+
+
 # 参考
 
 - [関数型プログラミングはまず考え方から理解しよう](https://qiita.com/stkdev/items/5c021d4e5d54d56b927c)
