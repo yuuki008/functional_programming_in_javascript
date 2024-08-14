@@ -165,6 +165,118 @@ const increment = count => count + 1;
 
 ### タスクをシンプルな関数に分解する
 
+関数型プログラミングは、単一責任（関数は 1 つのことを行う) と密接な関係にある。
+単一責任の関数を実装することで、関数の**合成**をしやすくなる。
+
+> [!NOTE]
+> 合成は、複数の関数を組み合わせて新しい関数を作成すること。
+>
+> ```javascript
+> const f = x => x + 1;
+> const g = x => x * 2;
+> const h = x => g(f(x));
+> ```
+> 上記の例では、`h` は `f` と `g` の合成関数である。
+> この合成は、`g` の戻り値と`f`のパラメーターの間に緩い型安全性がある。
+> 合成可能な条件は、パラメータの数と型が一致していることである。
+
+### 円滑なチェーンを使ってデータ処理
+
+> [!NOTE]
+> チェーンは、複数の関数やメソッドを連結して、呼び出すこと
+> ```javascript
+> const array = [1, 2, 3, 4, 5];
+> const result = array
+>     .filter(v => v % 2 === 0)
+>     .map(v => v * 2)
+>     .reduce((acc, v) => acc + v, 0);
+> ```
+
+関数チェーンの例
+    学校で 2 つ以上の授業を受けている学生の成績の平均値を計算するプログラム
+
+```javascript
+const enrollment = [
+    { enrolled: 2, grade: 100 },
+    null,
+    { enrolled: 1, grade: 80 },
+    { enrolled: 2, grade: 90 }
+];
+```
+命令型プログラム
+```javascript
+var totalGrades = 0;
+var totalStudentsFound = 0;
+
+for (let i = 0; i < enrollment.length; i++) {
+    let student = enrollment[i];
+
+    if (student === null) continue;
+    if (student.enrolled < 2) continue;
+
+    totalGrades += student.grade;
+    totalStudentsFound++;
+}
+var average = totalGrades / totalStudentsFound;
+```
+
+関数型で上記プログラムを分割する
+- 対象の学生を選択 ( 2 つ以上の授業を受けている学生)
+- 対象学生の成績を取得
+- 成績の平均値を計算
+
+loadsh を使って関数型プログラムを実装
+```javascript
+_.chain(enrollment)
+    .filter(student => student.enrolled > 1)
+    .pluck('grade')
+    .average()
+    .value();
+```
+
+### 非同期アプリケーションの複雑性に対処する
+
+非同期プログラムは、入れ子になったコールバック関数や Promise チェーンを使って実装されることが多い。
+入れ子のプログラムは、成功とエラー処理のロジックが複雑に記述されており、コードフローを破壊して、読みにくくする。
+
+学生の SSN を読み出して検証を行う命令型プログラム
+```javascript
+var valid = false;
+var elem = document.querySelector('#student-ssn');
+
+elem.onkeyup = function(event) {
+    var val = elem.value;
+
+    if (val !== null && val.length !== 0) {
+        val = val.replace(/^\s*|\-|\s*$/g, '');
+        if (val.length === 9) {
+            console.log(`Valid SSN: ${val}`);
+            valid = true;
+        } else {
+            console.log(`Invalid SSN: ${val}`);
+        }
+    }
+}
+
+```
+1. 副作用: 関数スコープ外のデータを使う
+2. データの変更
+3. 入れ子の分岐ロジック
+
+
+リアクティブプログラミングライブラリの RxJs を使って関数型プログラムを実装
+```javascript
+Rx.Observable.fromEvent(document.querySelector('#student-ssn'), 'keyup')
+    .pluck('srcElement', 'value')
+    .map(ssn => ssn.replace(/^\s*|\-|\s*$/g, ''))
+    .filter(ssn => ssn !== null && ssn.length === 9)
+    .subscribe(validSSN => console.log(`Valid SSN ${validSSN}`));
+```
+
+> [!NOTE]
+> リアクティブプログラミングは、データフローを定義し、データの変更を監視することで、アプリケーションの状態を自動的に更新するプログラミングスタイル。
+> 非同期プログラムの複雑性を低減し、コードの再利用性を高める。
+> 先の章で説明があるみたいだから、ここでは詳しく書かない。
 
 # 参考
 
