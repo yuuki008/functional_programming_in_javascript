@@ -67,3 +67,94 @@ const createPerson = (name, age) => {
 }
 ```
 
+### 可動部をディープフリーズ ( 再起的にフリーズ )
+
+クラス文法でも、プロパティを不変にすることは `Object.freeze` を利用すれば可能。
+しかしこれは、 Shallow Freeze であり、オブジェクトのプロパティがオブジェクトである場合は、そのプロパティはフリーズされない。
+
+### ディープフリーズを自作する
+
+```javascript
+const isObject = (obj) => obj !== null && typeof obj === 'object';
+
+const deepFreeze = (obj) => {
+    if (isObject(obj) && !Object.isFrozen(obj)) {
+        Object.freeze(obj);
+        Object.keys(obj).forEach(key => deepFreeze(obj[key]));
+    }
+
+    return obj;
+}
+```
+
+### レンズを使ってオブジェクトグラフを操作
+
+オブジェクト指向では、状態をメソッドによって変更を行うが、状態が正しく変更されたかどうかを確認することが難しい。
+**コピーオンライト（ 書き込み時にコピーすること ) ** という戦略に基づき、各メソッド呼び出しから新たなオブジェクトを返すような実装も可能だが、冗長でエラーの温床となる。
+状態を持つオブジェクトを不変に保ちつつ、状態を変更するための方法として、**レンズ** という概念がある。
+レンズは、自前で実装することなく、ライブラリを使用して実装することができる。
+
+```javascript
+const person = new Person('Alonzo', 'Church', '444-44-4444');
+const lastnameLens = R.lensProp('lastname');
+```
+
+上記プログラムでは、 `R.lensProp` で `lastname` プロパティに対するレンズを作成している。
+
+```javascript
+R.view(lastnameLens, person); // Church
+```
+
+`R.view` によって、このプロパティを読み込む小音ができる。
+
+```javascript
+const newPerson = R.set(lastnameLens, 'Mourning', person);
+newPerson.lastname // Mourning
+person.lastname // Church
+```
+
+`R.set` によって新たな値を持ったオブジェクトを作成することができる。
+さらに元のインスタンスの状態も保持することができている。
+つまりコピーオンライトを実現している。
+
+レンズは、初めての概念なので理解が浅い。
+別で時間をとって詳しく調べる必要がある。
+
+## 関数
+
+**関数とは、`()` 演算子によって評価される呼び出し可能な式の事です。**
+関数型プログラミングでは、常に関数を有効な値を生成する手段として扱います。
+よって void のような undefined を返す関数は避けるべきです。
+
+> [!NOTE]
+> 式は、値を返すが、文は値を返さない。
+
+手続き型は、順番に連続した文で構成され、関数型は、式で構成される。
+
+### 第一級オブジェクトとしての関数
+
+Javascript では、関数もオブジェクトであり、変数に代入したり、引数として渡したり、関数から返したりすることが可能。
+
+```javascript
+const add = (a, b) => a + b;
+const callFuction = (fn, a, b) => fn(a, b);
+const returnFunction = () => add;
+const obj = {
+    add: add
+};
+```
+
+### 高階関数
+
+上記で説明した通り、関数はオブジェクトであるため、関数を引数に取ったり、戻り値として返すことができる。
+このような関数を **高階関数** と呼ぶ。
+
+```javascript
+
+const applyOperation = (a, b, fn) => fn(a, b);
+const multiplier = (a, b) => a * b;
+applyOperation(2, 3, multiplier); // 6
+```
+
+
+
