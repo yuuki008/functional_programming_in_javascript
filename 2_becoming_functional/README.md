@@ -156,5 +156,251 @@ const multiplier = (a, b) => a * b;
 applyOperation(2, 3, multiplier); // 6
 ```
 
+以下の add 関数は、1 つめの引数を取り、別の引数を取って、これを add 関数の 1 つめの引数に加えた結果を戻す関数を返す
 
+```javascript
+const add = (a) => {
+  return (b) => a + b;
+}
+add(2)(3); // 5
+```
+
+**Javascript における関数は、与えられる入力値に基づき不変的に定義された「まだ実行されたいない値」である。**
+高階関数を組み合わせることで、小さなパーツから意味ある式を作ることで、プログラムをシンプルにできる。
+
+以下は、手続型で記述された福岡に住む人をログに出力するプログラム
+
+```javascript
+const printFukuokaResidents = (people) => {
+    for (let i = 0; i < people.length; i++) {
+        if (people[i].city === 'Fukuoka') {
+            console.log(people[i].name);
+        }
+    }
+}
+```
+
+ここからさらに Fukuoka 以外の人をログに出力するプログラムを追加する場合、手続型では別関数を作成するか、条件分岐を追加する必要がある。
+しかし、関数型では、高階関数を使って、配列内の処理を抽象化することができる。
+
+```javascript
+const printResidents = (people, action) => {
+    for (let i = 0; i < people.length; i++) {
+        action(people[i]);
+    }
+}
+```
+
+ここから printPeople をさらに抽象化し、再利用しやすくすると以下のようになる。
+
+```javascript
+const printResidents = (people, selector, printer) => {
+    people.filter(selector).forEach(printer);
+}
+
+const inFukuoka = (person) => person.city === 'Fukuoka';
+const inTokyo = (person) => person.city === 'Tokyo';
+
+printResidents(people, inFukuoka, console.log);
+printResidents(people, inTokyo, console.log);
+```
+
+### 関数の呼び出し方法
+
+1. グローバル関数
+2. メソッド
+3. コンストラクタ
+
+> [!NOTE]
+> 関数とメソッドの違いは、メソッドはオブジェクトに属している関数のことである。
+
+### 関数メソッド
+
+**関数のプロトタイプに定義されている ( メタ関数 ) のことを言う。**
+よく API ユーザーが既存の関数から新たな関数を生成できるよう、 API の基礎部分のコードで特に頻繁に利用される。
+
+```javascript
+
+const negate = (fn) => {
+    return function() {
+        return !fn.apply(this, arguments);
+    }
+}
+
+const isNull = (val) => val === null;
+const isNotNull = negate(isNull);
+
+isNotNull(null); //false
+isNotNull({}); // true
+```
+
+- call()
+  関数を即時に呼び出し、その呼び出し時に this の値を個別の引数を指定できる
+  ```javascript
+  const greet = () => console.log(`Hello, ${this.name}`);
+  const person = { name: 'Alonzo' };
+  greet.call(person)
+  ```
+- apply()
+  call() と同じだが、引数を配列で渡すことができる
+  ```javascript
+  const greet = (greeting) => console.log(`${greeting}, ${this.name}`);
+  const person = { name: 'Alonzo' };
+  greet.apply(person, ['Hello']);
+  ```
+- bind()
+  新しい関数を返し、その関数の this の値や、引数を固定することができる
+  ```javascript
+  const greet = (greeting) => console.log(`${greeting}, ${this.name}`);
+  const person = { name: 'Alonzo' };
+  const greetPerson = greet.bind(person, 'Hello');
+  greetPerson();
+  ```
+
+## クロージャとスコープ
+
+**クロージャとは、関数をその宣言された時点の環境にバインドするデータ構造のこと**
+他にも静的スコープや構文スコープとも呼ばれる。
+
+スコープは、変数が参照される値の範囲ですが、クロージャは、関数が宣言された時点のスコープを保持する。
+そしてクロージャは関数のスコープを超えて変数を参照することができるため、入れ子のようにクロージャを定義することで継承のような機能を実現することができる。
+
+```javascript
+const makeAddfunction = (amount) => {
+    return (number) => number + amount;
+}
+
+const makeExponentialFunction = (exponent) => {
+    return (base) => Math.pow(base, exponent);
+}
+
+const addTen = makeAddfunction(10);
+addTen(5); // 15
+
+const raiseTwoToThe = makeExponentialFunction(2);
+raiseTwoToThe(3); // 8
+```
+
+この例では、amount と base 変数が makeAddFunction と makeExponentialFunction の有効なスコープから外れているが、それぞれの関数が呼ばれた際に返される関数からは amount と base にアクセスできる。
+
+```typescript
+const outerVar = "Outer";
+
+const makeInner = (params: string) => {
+const innerVar = "Inner";
+
+const inner = () => {
+  console.log(
+    `I can see: ${outerVar}, ${innerVar}, and ${params}`
+  )
+}
+
+return inner;
+}
+
+const inner = makeInner("Params");
+inner()
+```
+
+このようにクロージャは、宣言された時点のスコープを保持するため、関数が返された後もそのスコープにアクセスできる。
+通常では、関数の実行が終了するとその関数内で定義されている変数はガベージコレクションによって破棄される。
+しかし関数の中の関数で変数が参照されている場合、その変数は破棄されずに保持される。
+この関数の中で関数を定義し、その中で変数を参照することで状態を保持するというのが、クロージャーの仕組み。
+
+### グローバルスコープ
+
+グローバルスコープは、プログラムのどこからでもアクセスできるスコープのこと。
+パッケージ化されていない場合は、ネームスペースの衝突が発生する可能性があるため、避けるべき。
+グローバルネームスペースの汚染は、別のファイル（ ライブラリやフレームワーク ) との競合を引き起こす可能性がある。
+
+**グローバル変数の使用は避ける**
+
+### Javascript のスコープ
+
+Javascript は、呼び出された変数に最も近いスコープから変数を探し、見つからない場合は、外側のスコープに移動していく。
+そこでグローバルスコープまで探し、見つからない場合は、 undefeind を返す。
+
+> [!NOTE]
+> Javascript の var は、ブロックスコープをサポートしていない
+> ブロックスコープとは、for や while, if, switch などの { } に囲まれたスコープの事
+> 例外は、catch ブロック内の変数
+> ```javascript
+> if (true) myVar = 10;
+> const doWork = () => {
+>   if (!myVar) {
+>     let myVar = 10;
+>   }
+>   console.log(myVar); // 10
+> }
+> ```
+> 他の言語だとブロックスコープがあるため、myVar を参照するエラーが発生する。
+
+スコープの巻き上げによって、グローバルスコープを汚染してしまう
+ループのカウントの i の宣言は、関数 processArr に巻き上げられ、関数 multipleBy10 で上書きされてしまう
+**ブロックスコープの let と const を使うことで、スコープの巻き上げを防ぐ**
+
+```typescript
+const loopCounterProbrem = () => {
+  const arr = [1, 2, 3, 4];
+
+  const processArr = () => {
+    const multipleBy10 = (number: number) => {
+      i = 10;
+      return number * i;
+    }
+
+    for (var i = 0; i < arr.length; i++) {
+      arr[i] = multipleBy10(arr[i]);
+    }
+
+    return arr;
+  }
+
+  const result = processArr();
+  console.log(result); // [10, 2, 3, 4]
+}
+```
+
+## クロージャー実践
+
+1. クロージャでプライベート変数を実現する
+
+クロージャを使用すれば、プライベート変数を実現できるため、ライブラリやフレームワークなどの開発者は、クロージャを使用してカプセル化を行なっています。
+
+```javascript
+var MyModule = (function MyModule(export) {
+    let _myPrivateVar = 10;
+
+    export.method1 = () => {
+        console.log(_myPrivateVar);
+    }
+    export.method2 = () => {
+        console.log(_myPrivateVar);
+    }
+} MyModule || {}));
+```
+
+上記の例では、MyModule というクロージャを使用して、_myPrivateVar というプライベート変数を実現する。
+呼び出し側は、method1 と method2 というパブリックメソッドを使用して、_myPrivateVar を参照する。
+
+2. クロージャで非同期のフックを実現する
+
+```
+getJSON('/students',
+    (students => {
+        getJSON('students/grades',
+          grades => processGrades(grades),
+          error => console.log(error.message)
+        )
+    },
+    (error) => {
+        console.log(error.message)
+    }
+);
+```
+
+3. ブロックスコープ変数をエミュレートする
+
+## 大事〜
+- Javascript には、ブロックスコープがない
 
