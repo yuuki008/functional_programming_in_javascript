@@ -168,7 +168,7 @@ _(persons).filter(bornIn1903).map(getCountry).reduce(gatherStats, {});
 
 ## コードを把握する
 
-> ![IMPORTANT]
+> [!IMPORTANT]
 > コードを把握すること
 > プログラムを隅々まで見渡して、何が行われているかについて簡単にメンタルモデルを構築する能力
 
