@@ -307,7 +307,7 @@ chain 関数を使うことで Lodash の提供するメソッドを連続して
 
 > [!NOTE]
 > 自己相似とは、全体の構造が部分の構造と同様のパターンや特性を持つことを指す。
-> ![自己相似](https://www.google.com/url?sa=i&url=https%3A%2F%2Fweb.quizknock.com%2Ffractal&psig=AOvVaw3QCpmDyeJHUWLgDtzARtH_&ust=1726050262271000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCJDBuLmUuIgDFQAAAAAdAAAAABAE)
+> ![自己相似](https://quizknock.com/wp-content/uploads/2017/01/sierpinski.png)
 
 配列を加算するプログラムを考える。
 まずは命令型で書いた例を見てみる。
