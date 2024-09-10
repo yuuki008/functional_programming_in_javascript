@@ -305,3 +305,124 @@ chain 関数を使うことで Lodash の提供するメソッドを連続して
 
 **再帰とは、ある問題を解決するために、問題をさらに小さな自己相似の問題に分解すること。**
 
+> [!NOTE]
+> 自己相似とは、全体の構造が部分の構造と同様のパターンや特性を持つことを指す。
+> ![自己相似](https://www.google.com/url?sa=i&url=https%3A%2F%2Fweb.quizknock.com%2Ffractal&psig=AOvVaw3QCpmDyeJHUWLgDtzARtH_&ust=1726050262271000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCJDBuLmUuIgDFQAAAAAdAAAAABAE)
+
+配列を加算するプログラムを考える。
+まずは命令型で書いた例を見てみる。
+
+```javascript
+var acc = 0;
+
+for(let i = 0; i < numbers.length; i++) {
+    acc += numbers[i];
+}
+```
+
+reduce を利用する
+
+```javascript
+_.reduce(numbers, (acc, number) => acc + number, 0);
+```
+
+ループの制御（イテレーション）を関数に抽象化した。
+
+Lodash の first と rest を使って再帰的に考える。
+
+```javascript
+function sum(numbers) {
+    if (_.isEmpty(numbers)) {
+        return 0;
+    }
+
+    return _.first(numbers) + sum(_.rest(numbers));
+}
+```
+
+```
+1 + sum([2, 3, 4])
+1 + 2 + sum([3, 4])
+1 + 2 + 3 + sum([4])
+1 + 2 + 3 + 4 + sum([])
+1 + 2 + 3 + 4 + 0
+1 + 2 + 3 + 4
+1 + 2 + 7
+1 + 9
+10
+```
+
+> [!IMPORTANT]
+> **再帰処理は、ループ処理とパフォーマンスはほぼ同等**
+> Javaascript には末尾呼び出し最適化( TCO ) があり、スタックのオーバーフローを防いでいる。
+> 具体的な仕組みや実装について、以下のリンクを参照
+> [末尾再帰による最適化](https://qiita.com/pebblip/items/cf8d3230969b2f6b3132)
+
+
+```javascript
+class Tree {
+	constructor(root) {
+		this._root = root;
+	}
+
+	static map(node, fn, tree = null) {
+		node.value = fn(node.value);
+		if(tree === null) {
+			tree = new Tree(node);
+		}
+		if(node.hasChildren()) {
+			_.map(node.children, function (child) {
+				Tree.map(child, fn, tree);
+			});
+		}
+		return tree;
+	}
+
+	get root() {
+		return this._root;
+	}
+}
+
+class Node {
+	constructor(val) {
+		this._val = val;
+		this._parent = null;
+		this._children = [];
+	}
+
+	isRoot() {
+		return !isValid(this._parent);
+	}
+
+	get children() {
+		return this._children;
+	}
+
+	hasChildren() {
+		return this._children.length > 0;
+	}
+
+	get value() {
+		return this._val;
+	}
+
+	set value(val) {
+		this._val = val;
+	}
+
+	append(child) {
+		child._parent = this;
+		this._children.push(child);
+		return this;
+	}
+
+	toString() {
+		return `Node (val: ${this._val}, children:
+			${this._children.length})`;
+	}
+};
+```
+
+> [!IMPORTANT]
+> データ構造に関わらず、関数のセマンティックを変更させてはいけない
+
