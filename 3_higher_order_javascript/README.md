@@ -198,7 +198,7 @@ FPでは、処理を抽象的な関数として定義し、それらを組み合
 >    return 'Unsupported data type';  // その他の場合はエラーメッセージを返す
 >  }
 > }
-
+>
 > console.log(processData(10));         // 20
 > console.log(processData('hello'));    // 'HELLO'
 > console.log(processData([1, 2, 3]));  // 3
@@ -287,7 +287,6 @@ _.chain(names)
 Lodash を使った遅延関数チェーンの例
 
 ```javascript
-
 _.chain(persons)
   .filter(isValid)
   .map(_.property('address.country'))
