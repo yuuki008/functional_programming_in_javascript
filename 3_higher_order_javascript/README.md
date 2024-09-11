@@ -426,3 +426,72 @@ class Node {
 > [!IMPORTANT]
 > データ構造に関わらず、関数のセマンティックを変更させてはいけない
 
+## ループではなく、再帰を使うメリット
+
+多くの問題は、小さな部分に分割することで同じ種類の問題を解決できるという性質を持っている。
+再起を利用することで、小さな問題に分割でき、それをを個別の関数として扱いやすくなる。
+これにより再利用可能な関数を作成しやすくなる。
+
+具体例1: 階乗計算
+```javascript
+// 再帰
+function factorial(n) {
+    if (n === 0) {
+        return 1;
+    }
+
+    return n * factorial(n - 1);
+}
+
+// ループ
+function factorial(n) {
+    let result = 1;
+    for (let i = 1; i <= n; i++) {
+        result *= i;
+    }
+    return result;
+}
+```
+
+再帰では、階乗の定義 `n * (n-1)!` をそのままプログラムに落とし込むことができている。
+ループでは、`for` 分を使って、`result` に値を累積しているが、数学的な定義を直接的に表現していないため、問題の理解には処理の流れを追う必要がある。
+
+具体例2: ツリー探索
+```javascript
+// 再帰
+interface TreeNode {
+    value: number;
+    children: TreeNode[];
+}
+
+function findValueInTree(node: TreeNode, target: number): boolean {
+    if (node.value === target) return true;
+
+    for (let child of node.children) {
+        if (findValueInTree(child, target)) return true;
+    }
+
+    return false;
+}
+
+// ループ
+function findValueInTree(node: TreeNode, target: number): boolean {
+    const stack = [node];
+    while (stack.length > 0) {
+        const current = stack.pop();
+        if (current.value === target) return true;
+
+        stack.push(...current.children);
+    }
+
+    return false;
+}
+```
+
+再帰的な実装は、関数の再利用性や抽象化に優れている。
+再帰の実装でも `TreeNode` というデータ構造に依存しているため、そのままの形では他のデータ構造には適用できません。
+しかし、**再帰の本当に優れている点は、関数を抽象化しやすい**ことです。
+引数を一般化することで、簡単にデータ構造に依存しない再利用可能な関数を作成できます。
+
+ループだとデータ構造が変わるたびにスタックやキューの管理が必要になり、再帰のようには抽象化できない。
+ループ内の処理がデータ構造に密接に結びついているため、他の構造に再利用する際には手動でコードを変更する必要が出てくる。
