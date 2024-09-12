@@ -95,3 +95,99 @@ chatGPT の回答
 関数パイプラインは、純粋関数であることが多く、再利用性が高い。
 また依存するのは、引数のみなので引数の数と型さえあっていれば、どのような関数でも組み合わせが可能。
 ただ Javascript には、パイプライン演算子がないので、パイプライン処理を行う関数を自作する必要がある。
+
+## 互換性の関数
+
+> [!IMPORTANT]
+> 関数が亜tCustomersプログラミングにおける「互換性」とは、関数同士を組み合わせ使う際に、正しく動作するための条件や性質を指す。
+> 関数を組み合わせる時に、関数同士の入出力で **型** と **引数の数** が一致していることが重要。
+
+##  関数とアリティ
+
+アリティとは、**関数が受け取る引数の数** を指す。
+引数の数が少ないほど、使い方が簡単で組み合わせやすく、再利用性が高い。
+できるだけ、単一の引数を取る純粋関数を作ることが望ましいが、簡単ではない。
+関数のアリティを減らす方法として **タプル** と **カリー化** がある。
+
+### タプル
+
+タプルとは、**有限かつ順番に並べられたリスト** のこと。
+関数の戻り値でオブジェクトや配列を返すよりも、次の点でメリットがある。
+
+- 不変性: 一度作成されると、内部データを変更できない
+- 一時的な型を作らなくて良い: タプルは互いに全く関係ない値同士を関連づけることができる。データ一緒にグループ化するためだけの型を定義し、インスタンス化することは、モデルを必要以上に複雑化させる。
+- 異種混合の配列を作らなくて良い: タプルは異なる型の値を持つことができる。配列は同じ型の値しか持てない。
+
+
+> [!IMPORTANT]
+> Javascript には、標準でタプルがない
+
+以下のようにユーザー独自のタプルを実装することができる。
+
+```javascript
+// タプルの実装
+const Tuple = function(/* types */) {
+    const typeInfo = Array.prototype.slice.call(arguments, 0)
+
+    const _T = function(/* values */) {
+        const values = Array.prototype.slice.call(arguments, 0)
+        if (values.some(val => val === null || val === undefined)) {
+            throw new ReferenceError('Tuples may not have any null values')
+        }
+
+        if (values.length !== typeInfo.length) {
+            throw new TypeError('Tuple arity does not match its prototype')
+        }
+
+        values.map((val, index) => {
+            this['_' + (index + 1)] = checkType(typeInfo[index])(val)
+        }, this)
+
+        Object.freeze(this)
+    }
+
+    _T.prototype.values = () => {
+        return Object.keys(this).map(k => this[k], this)
+    }
+
+    return _T
+}
+
+const Status = Tuple(Boolean, String)
+
+new Status(true, 'hello')
+new Status(false, 'world')
+```
+
+> [!NOTE]
+> Javascript の配列で違う型を持つ値を扱うことができ、typescript を使えば配列の各要素に型指定できるのでタプルを自作する必要はなさそう。
+> ただ上記の Tuple の実装は、アリティ（長さ）を固定でき、変更不可能なデータ構造を作ることができているので、より厳密なデータ管理を行いたい場合は、有効な手段となる。
+
+### カリー化
+
+> [!IMPORTANT]
+> カリー化とは、引数が複数ある関数を、引数を 1 つずつ受け取る関数に変換すること
+> そのため複数の引数を受け取る 1 つの関数を複数の単一の引数を受け取る関数に分割することができる。
+> 関数型プログラミングでは、引数を一般化して、再利用性を高めることが重要であるため、カリー化は有用な手法となる。
+
+```javascript
+// カリー化前
+function add(x, y) {
+    return x + y
+}
+
+// カリー化後
+
+function add(x) {
+    return function(y) {
+        return x + y
+    }
+}
+
+const addTwo = add(2)
+addTwo(3) // 5
+```
+
+カリー化を行うことで 1 部の引数を先に固定して、後で必要に応じて残りの引数を渡すことで、関数の再利用性が高まる。
+例えば、ある引数が特定の値で固定される状況が多い場合、その部分を先にカリー化してしまえば、毎回同じ引数を渡さなくて良くなる。
+
