@@ -99,7 +99,7 @@ chatGPT の回答
 ## 互換性の関数
 
 > [!IMPORTANT]
-> 関数が亜tCustomersプログラミングにおける「互換性」とは、関数同士を組み合わせ使う際に、正しく動作するための条件や性質を指す。
+> 関数型プログラミングにおける「互換性」とは、関数同士を組み合わせ使う際に、正しく動作するための条件や性質を指す。
 > 関数を組み合わせる時に、関数同士の入出力で **型** と **引数の数** が一致していることが重要。
 
 ##  関数とアリティ
@@ -191,3 +191,112 @@ addTwo(3) // 5
 カリー化を行うことで 1 部の引数を先に固定して、後で必要に応じて残りの引数を渡すことで、関数の再利用性が高まる。
 例えば、ある引数が特定の値で固定される状況が多い場合、その部分を先にカリー化してしまえば、毎回同じ引数を渡さなくて良くなる。
 
+### 関数ファクトリのエミュレート
+
+オブジェクト指向の世界では、インターフェースを利用して、オブジェクトの振る舞いを変更できる。
+これは **ファクトリメソッドパターン** と呼ばれ、コードの呼び出し側では、メソッドの呼び出しのみを行い、内部の実装を意識する必要がない。
+
+Java でファクトリメソッドパターンを実装すると以下のようになる。
+
+```java
+public interface StudentStore {
+    Student findStudent(String ssn);
+}
+
+public class DbStudentStore implements StudentStore {
+    public Student findStudent(String ssn) {
+        // データベースから学生情報を取得する処理
+    }
+}
+
+public class CacheStudentStore implements StudentStore {
+    public Student findStudent(String ssn) {
+        // キャッシュから学生情報を取得する処理
+    }
+}
+```
+
+findStudent を呼び出す側は、どこからデータを取得しているか意識する必要がない。
+このファクトリーメソッドパターンをカリー化を使ってエミュレートしてみる。
+
+```javascript
+const fetchStudentFromDb = R.curry(function (db, ssn) {
+    return find(db, ssn)
+})
+
+const fetchStudentFromArray = R.curry(function (array, ssn) {
+    return arr[ssn]
+})
+
+const fetchStudent = useDb ? fetchStudentFromDb(db) : fetchStudentFromArray(array)
+findStudent('444-44-4444');
+```
+
+汎用的な findStudent により、関数定義と評価を分離できる。
+
+### 関数テンプレートの実装
+
+アプリケーション内でエラー・警告・デバッグなどの様々な状況で異なるログ機能を設定することを考える。
+そして標準の `console.log` ではなく、 ログフレームワークのライブラリ `Log4js` を使用して実装する。
+この `Log4js` は設定可能な項目が多く、直接呼び出してしまうとアプリケーション全体でコードの重複があちこちで発生してしまう。よって再利用可能な関数テンプレートを定義して、コードの重複を減らす。
+
+```javascript
+const logger = function(appender, layout, name, level, message) {
+    const appenders = {
+        'alert': new Log4js.JSAlertAppender(),
+        'console': new Log4js.BrowserConsoleAppender(),
+    }
+    const layouts = {
+        'basic': new Log4js.BasicLayout(),
+        'json': new Log4js.JSONLayout(),
+        'xml': new Log4js.XMLLayout()
+    }
+    const appender = appenders[appender]
+    appender.setLayout(layouts[layout])
+    const logger = Log4js.getLogger(name)
+    logger.addAppender(appender)
+
+    logger.log(level, message, null);
+}
+
+const log = R.curry(logger)('alert', 'json', 'FJS');
+log("ERROR", "Error condition detected!!")
+
+const logError = log('ERROR')
+logError('Error code 404 detected!!')
+logError('Error code 402 detected!!')
+```
+
+このコードを実行すると `logger` 関数に対して `curry` が呼び出され、最終的に単項関数が作成される。
+関数に任意の個数のパラメータを渡せるのは、引数の定義されたタイミングで関数を段階的に構築することができる。
+
+> ![IMPORTANT]
+> カリー化が行っているのは、複数の引数を取る関数 ( 多引数関数 ) を、1 つの引数を取る関数 ( 単項関数 ) に変換することである。
+
+## 部分適用とパラメータ束縛
+
+**部分適用は、非可変個の引数を取る関数のパラメータの一部を固定値に初期化して、アリティがより小さい関数を返すことである。**
+例えば、5 つの引数を取る関数がある場合、そのうち 3 つの引数を固定して、残りの 2 つの引数を取る関数を作成することができる。
+
+カリー化は、引数を 1 つずつ受け取る関数に変換し、部分適用は、関数の引数の一部を固定して、新しい関数を作成する。
+
+```javascript
+function partial () {
+    let fn = this, boundArgs = Array.prototype.slice.call(arguments)
+    let placeholder = <<partialPlaceholderObj>>
+    let bound = function () {
+        let position = 0, length = boundArgs.length
+        let args = Array(length)
+        for (let i = 0; i < length; i++) {
+            args[i] = boundArgs[i] === placeholder ? arguments[position++] : boundArgs[i]
+        }
+        while (position < arguments.length) {
+            args.push(arguments[position++])
+        }
+        return fn.apply(this, args)
+    }
+}
+```
+
+## 参考
+[超強力な関数型プログラミング用ライブラリ Ramda.js を学ぼう #1 - これから始める人のための導入編](https://techblog.recruit.co.jp/article-560/)
