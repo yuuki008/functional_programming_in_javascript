@@ -298,5 +298,63 @@ function partial () {
 }
 ```
 
+partial や bind の有効な使用方法を見ていく。
+
+#### コア言語の拡張
+
+String や Number などのコアのデータ型を拡張するのに使用できる。
+
+```javascript
+String.prototype.first = _.partial(String.prototype.substring, 0, _)
+"Functional Programming".first(3) // Fun
+
+String.prototype.asName = _.partial(String.prototype.replace, /(\w+)\s(\w+)/, '$2, $1')
+'Alonzo Church'.asName() // Church, Alonzo
+
+String.prototype.explode = _.partial(String.prototype.split, /[\x]/gi);
+"ABC".explode() // ["A", "B", "C"]
+
+String.prototype.parseUrl = _.partial(String.prototype.match, /(\w+):\/\/([\w.]+)\/(\S+)/)
+'http://www.google.com'.parseUrl() // ["http://www.google.com", "http", "www.google.com", ""]
+```
+<details>
+    <summary>_ ( プレースホルダー引数 ) について</summary>
+
+    Lodash には、プレースホルダーとして `_` が用意されている。
+    これは、後から提供される引数の位置を指定するために使用される。
+</details>
+
+> [!NOTE]
+> 自分自身で関数を実装する前に言語の更新状況を調べる習慣をつける
+> ```javascript
+> if (!String.prototype.first) {
+>     String.prototype.first = _.partial(String.prototype.substring, 0, _)
+> }
+
+#### 遅延関数に束縛
+
+遅延関数とは、関数や処理の実行を必要になるまで遅らせること。
+
+bind を利用することで遅延したタスクを実行するオブジェクトを作成できる。
+
+```javascript
+const Schduler = (function() {
+    const delayedFn = _.bind(setTimeout, undefined, _, _)
+
+    return {
+        delay5: _.partial(delayedFn, _, 5000),
+        delay10: _.partial(delayedFn, _, 10000),
+        delay: _.partial(delayedFn, _, _)
+    }
+})();
+
+Schduler.delay5(() => console.log('5 seconds later'))
+Schduler.delay10(() => console.log('10 seconds later'))
+Schduler.delay(() => console.log('1 second later'), 1)
+```
+
+
+
 ## 参考
 [超強力な関数型プログラミング用ライブラリ Ramda.js を学ぼう #1 - これから始める人のための導入編](https://techblog.recruit.co.jp/article-560/)
+
